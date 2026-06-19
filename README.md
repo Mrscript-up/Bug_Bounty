@@ -13,3 +13,4 @@
 ### ⚠️ Security Notice: Documented vulnerabilities might be unpatched. If you find one, use it 😉 
 ***
 ### I provided explanations for each section in each file for everything related to that section.
+<p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=00FF00&height=120&section=footer"/> </p>
