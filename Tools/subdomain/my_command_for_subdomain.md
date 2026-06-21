@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="https://readme-typing-svg.herokuapp.com?color=00FF00&center=true&vCenter=true&lines=Welcome+To+This+Section;" />
+</p>
 ### I use this command and tools to collect subdomains of a target:
 - subfinder
 - alterx
@@ -13,7 +16,7 @@ cat resolve2.txt | httpx -title -sc -cl -location > resolve3.txt
 
 # use "sort -u"
 ```
-
+***
 ### Before the first explanation, let's look at how we can download these tools?
 Just download pdtm tool.
 
@@ -29,9 +32,18 @@ then download pdtm => `go install -v github.com/projectdiscovery/pdtm/cmd/pdtm@l
 
 #### After going through the previous steps, we must first clean all the tools with this command => `pdtm -ra` then:
 #### We download the tools with this command => `pdtm -ia -igp`
-
 #### After the download is complete, run pdtm to see the tools you downloaded.
-#### This tool has the ability to update a tool via pdtm if an update is available.
 
-Link tool => [PDTM](https://github.com/projectdiscovery/pdtm)
+#### This tool has the ability to update a tool via pdtm if an update is available.
+***
+👤 tool link => [PDTM](https://github.com/projectdiscovery/pdtm)
+
+🧰 tools links:
+- [subfinder](https://github.com/projectdiscovery/subfinder)
+- [alterx](https://github.com/projectdiscovery/alterx)
+- [dnsx](https://github.com/projectdiscovery/dnsx)
+- [naabu](https://github.com/projectdiscovery/naabu)
+- [httpx](https://github.com/projectdiscovery/httpx)
+
+<p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=00FF00&height=120&section=footer"/> </p>
 
