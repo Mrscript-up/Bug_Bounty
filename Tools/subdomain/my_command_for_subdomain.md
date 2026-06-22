@@ -1,6 +1,7 @@
 <p align="center">
   <img src="https://readme-typing-svg.herokuapp.com?color=00FF00&center=true&vCenter=true&lines=Welcome+To+This+Section;" />
 </p>
+
 ### I use this command and tools to collect subdomains of a target:
 - subfinder
 - alterx
@@ -10,7 +11,7 @@
 
 command
 ```bash
-subfinder -d example.com -all | alterx | dnsx >> resolve.txt
+subfinder -d example.com -all | alterx | dnsx -a -resp | sed 's/\[[^]]*\]//g' | httpx -mc 200,201,202,203,204,301,302,303,307,308,401,403,405,500 >> resolve.txt
 cat resolve.txt | naabu -top-ports 1000 -ep 22 > resolve2.txt
 cat resolve2.txt | httpx -title -sc -cl -location > resolve3.txt
 
@@ -35,6 +36,12 @@ then download pdtm => `go install -v github.com/projectdiscovery/pdtm/cmd/pdtm@l
 #### After the download is complete, run pdtm to see the tools you downloaded.
 
 #### This tool has the ability to update a tool via pdtm if an update is available.
+
+### NOW: some inforamtion about alterx tool:
+berore use alterx , write your target hist here in this section:
+for example write => google , api , etc
+<img width="600" height="600" alt="image" src="https://github.com/user-attachments/assets/2d7c2db7-d79c-4eba-a9b9-f7785c50f3ff" />
+
 ***
 👤 tool link => [PDTM](https://github.com/projectdiscovery/pdtm)
 
