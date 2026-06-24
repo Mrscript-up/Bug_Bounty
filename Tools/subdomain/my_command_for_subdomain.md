@@ -53,6 +53,7 @@ download from (for firefox) => [open-multiple-urls](https://addons.mozilla.org/e
 #### 1- The first is the paraforge plugin, which allows you to create a custom wordlist based on existing paths and parameters. Use it for FUZZ later.
 - It is possible that the paraforge plugin has extra words in the list it generates, so use the `sort -u` command.
 #### 2- And use the logger++ plugin to log requests so you can check them later.
+### You can download these extensions from the `BApp store`.
 ***
 👤 tool link => [PDTM](https://github.com/projectdiscovery/pdtm)
 
