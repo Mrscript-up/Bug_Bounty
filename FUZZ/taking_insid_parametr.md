@@ -54,12 +54,16 @@ SUMMARY: 1 URLs with POST parameters, 4 total parameters
 ```
 ***
 ### All switches:
-`-f` = your .xml file.
-`-o` = output file.
-`--csv` = for excel output file.
-`--debug` = debug output.
+- `-f` = your .xml file.
+- `-o` = output file.
+- `--csv` = for excel output file.
+- `--debug` = debug output.
 ***
 ### download:
 ```
-
+git clone https://github.com/Mrscript-up/Bug_Bounty.git
+cd Bug_Bounty
+cd FUZZ
+python TP.py
 ```
+<p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=00FF00&height=120&section=footer"/> </p>
