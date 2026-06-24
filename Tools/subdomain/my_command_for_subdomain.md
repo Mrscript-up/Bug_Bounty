@@ -47,6 +47,13 @@ download from (for firefox) => [open-multiple-urls](https://addons.mozilla.org/e
 <img width="300" height="300" alt="image" src="https://github.com/user-attachments/assets/4b1714d2-c7ad-450b-8117-a9418a0344c3" />
 
 ***
+### And it's better to have these plugins downloaded in your browser before this:
+#### paraforge & loger++
+
+#### 1- The first is the paraforge plugin, which allows you to create a custom wordlist based on existing paths and parameters. Use it for FUZZ later.
+- It is possible that the paraforge plugin has extra words in the list it generates, so use the `sort -u` command.
+#### 2- And use the logger++ plugin to log requests so you can check them later.
+***
 👤 tool link => [PDTM](https://github.com/projectdiscovery/pdtm)
 
 🧰 tools links:
