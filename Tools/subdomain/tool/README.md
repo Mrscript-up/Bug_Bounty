@@ -24,4 +24,5 @@ python3 _main_.py example.com
 ```
 
 #### then you will have subdomains , ports , soma information from httpx scan.
+#### i will try to improve this code...
 <p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=00FF00&height=120&section=footer"/> </p>
