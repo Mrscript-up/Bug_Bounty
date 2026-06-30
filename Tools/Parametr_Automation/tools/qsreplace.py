@@ -26,6 +26,14 @@ def run_qsreplace(target):
             print(f"Error running qsreplace: {stderr.decode()}")
             sys.exit(1)
 
+        command2 = f"cat {input_file} | qsreplace bb1b >> qs2_bb1b.output"
+        process2 = subprocess.Popen(command2, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process2.communicate()
+
+        if process2.returncode != 0:
+            print(f"Error running qsreplace: {stderr.decode()}")
+            sys.exit(1)
+
         return stdout.decode()
     
     except Exception as e:
