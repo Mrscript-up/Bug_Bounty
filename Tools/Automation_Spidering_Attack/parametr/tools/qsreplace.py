@@ -18,7 +18,7 @@ def run_qsreplace(domain):
             print(f"Input file {input_file} does not exist. Please run paramspider first.")
             sys.exit(1)
 
-        command = f"cat {input_file} | qsreplace aaaa >> /paramspider/qs.output"
+        command = f"cat {input_file} | qsreplace aaaa > /paramspider/qs.output"
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         time.sleep(3)
@@ -26,7 +26,7 @@ def run_qsreplace(domain):
             print(f"Error running qsreplace: {stderr.decode()}")
             sys.exit(1)
 
-        command2 = f"cat {input_file} | qsreplace bb1b >> /paramspider/qs2_bb1b.output"
+        command2 = f"cat {input_file} | qsreplace bb1b > /paramspider/qs2_bb1b.output"
         process2 = subprocess.Popen(command2, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process2.communicate()
         time.sleep(3)
