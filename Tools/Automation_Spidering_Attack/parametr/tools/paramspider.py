@@ -13,7 +13,7 @@ def run_paramspider(domain):
 
     # Run paramspider:
     try:
-        command = f"paramspider -d {domain} -s | sort -u | httpx >> /paramspider/{domain}_paramspider_output.txt"
+        command = f"paramspider -d {domain} -s | sort -u | httpx > /paramspider/{domain}_paramspider_output.txt"
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         time.sleep(3)
