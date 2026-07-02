@@ -2,7 +2,7 @@
 
 ## Exploring the cracks in the digital fabric. This repository is a collection of my findings in the world of bug hunting and vulnerability research.
 
-## What’s inside?
+## What is inside?
 
 ### 🚀 Vulnerabilities: A deep dive into bugs found in real-world programs.
 
