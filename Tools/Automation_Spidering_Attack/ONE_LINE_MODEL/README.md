@@ -125,12 +125,8 @@ The tool runs in 6 automated phases:
     - Generates final summary report
     - Displays discovered assets count
 ## 📌 Example Summary Output
-```
-Total Distinct URLs Discovered : 1243
-Clean Directory Paths Found     : 532
-Critical Paths Found            : 41
-Unique Parameters Found         : 78
-```
+<img width="725" height="550" alt="image" src="https://github.com/user-attachments/assets/73e2d649-9d0c-40f8-8e8f-39c25781e92c" />
+
 ## ⚠️ Disclaimer
 
 This tool is intended for:
@@ -149,7 +145,8 @@ The author is not responsible for any misuse.
 - Web dashboard for results
 - Docker support
 - Advanced vulnerability detection
-##👤 Author
+
+## 👤 Author
 
 Built by a Mrscript 🚀
 Focused on automation, bug bounty, and offensive security tooling.
