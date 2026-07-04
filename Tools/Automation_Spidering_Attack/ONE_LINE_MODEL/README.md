@@ -1,4 +1,4 @@
-# 🔍 Recon Automation Tool
+# 🔍 Spidering Automation Tool
 
 A fully automated **Security Reconnaissance Pipeline** written in Python that integrates multiple powerful OSINT and web enumeration tools such as `gospider`, `paramspider`, `httpx`, `katana`, and `qsreplace`.
 
