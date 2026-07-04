@@ -154,3 +154,5 @@ Focused on automation, bug bounty, and offensive security tooling.
 ## ⭐ If you like this project
 
 Give it a star and contribute improvements!
+
+<p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=00FF00&height=120&section=footer"/> </p>
