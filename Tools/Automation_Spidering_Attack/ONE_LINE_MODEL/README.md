@@ -154,5 +154,7 @@ Focused on automation, bug bounty, and offensive security tooling.
 ## ⭐ If you like this project
 
 Give it a star and contribute improvements!
+***
+2 version => update_spidering_attack_tool.py & Spidering_Attack_Tool.py
 
 <p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=00FF00&height=120&section=footer"/> </p>
