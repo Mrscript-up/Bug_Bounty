@@ -23,6 +23,8 @@ from typing import List, Dict, Optional, Tuple, Set, Pattern
 from datetime import datetime
 from collections import defaultdict
 import enum
+import urllib.request
+import urllib.error
 
 
 # =============================================================================
