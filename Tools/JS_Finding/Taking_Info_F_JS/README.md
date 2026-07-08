@@ -151,3 +151,4 @@ Made with 🔥 by Mrscript-up
 <br/><br/>
 ⭐ Star this repo · Report Bug · Follow on GitHub
 </div>
+<p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=00FF00&height=120&section=footer"/> </p>
