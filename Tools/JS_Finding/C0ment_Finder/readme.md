@@ -110,3 +110,4 @@ Batch/CMD	REM, ::
 python comment_extractor.py ./my_project -o comments.txt --stats -v
 ```
 #### The tool will recursively scan, skip binary files and excluded directories, run a string-aware state machine on every supported source file, and write a clean report to your specified output file. You can also use --split-by-language to get one file per language, or -f json / -f md for structured output
+<p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=00FF00&height=120&section=footer"/> </p>
