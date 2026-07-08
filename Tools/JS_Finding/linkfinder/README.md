@@ -206,3 +206,4 @@ GraphQL endpoint search	python linkfinder.py -u https://api.app --filter "graphq
 <div align="center">
 Made by Mrscript
 </div>
+<p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=00FF00&height=120&section=footer"/> </p>
