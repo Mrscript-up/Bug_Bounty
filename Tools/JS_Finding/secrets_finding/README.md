@@ -210,3 +210,4 @@ Contributions are welcome! Here's how you can help:
 <p align="center">
   <strong>Built by <a href="https://github.com/Mrscript-up">Mrscript-up</a></strong>
 </p>
+<p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=00FF00&height=120&section=footer"/> </p>
