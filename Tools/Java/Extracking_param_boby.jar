@@ -1,0 +1,155 @@
+package burp;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class MassAssignmentCollector implements IBurpExtender, IHttpListener, ITab {
+
+    private IBurpExtenderCallbacks callbacks;
+    private IExtensionHelpers helpers;
+    
+   
+    private List<ParamData> collectedParams = new ArrayList<>();
+    
+    // UI Components
+    private DefaultTableModel tableModel;
+    private JTable table;
+
+    @Override
+    public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
+        this.callbacks = callbacks;
+        this.helpers = callbacks.getHelpers();
+        callbacks.setExtensionName("Mass Assignment Param Collector");
+        
+        
+        callbacks.registerHttpListener(this);
+        
+       
+        SwingUtilities.invokeLater(this::buildUI);
+        
+        callbacks.printOutput("Mass Assignment Collector Loaded Successfully!");
+    }
+
+    @Override
+    public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
+      
+        if (!messageIsRequest || toolFlag != IBurpExtenderCallbacks.TOOL_PROXY) {
+            return;
+        }
+
+       
+        IRequestInfo requestInfo = helpers.analyzeRequest(messageInfo);
+        String url = requestInfo.getUrl().toString();
+        List<IParameter> params = requestInfo.getParameters();
+
+        for (IParameter param : params) {
+            int type = param.getType();
+            
+           
+            if (type == IParameter.PARAM_BODY || type == IParameter.PARAM_JSON) {
+                String name = param.getName();
+                String value = param.getValue();
+
+               
+                if (!containsParam(name, value, url)) {
+                    ParamData data = new ParamData(url, name, value, type == IParameter.PARAM_JSON ? "JSON" : "BODY");
+                    collectedParams.add(data);
+                    
+                 
+                    SwingUtilities.invokeLater(() -> {
+                        tableModel.addRow(new Object[]{url, name, value, data.getType()});
+                    });
+                }
+            }
+        }
+    }
+
+   
+    private boolean containsParam(String name, String value, String url) {
+        for (ParamData p : collectedParams) {
+            if (p.name.equals(name) && p.value.equals(value) && p.url.equals(url)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    
+    private void buildUI() {
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        
+        tableModel = new DefaultTableModel(new Object[]{"URL", "Param Name", "Param Value", "Type"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;ا
+            }
+        };
+        
+        table = new JTable(tableModel);
+        table.setAutoCreateRowSorter(true);  
+            
+      
+        JPanel buttonPanel = new JPanel();
+        JButton btnCopySelected = new JButton("Copy Selected Params");
+        JButton btnSendToIntruder = new JButton("Send to Intruder");
+        JButton btnClear = new JButton("Clear Table");
+
+        btnClear.addActionListener(e -> {
+            tableModel.setRowCount(0);
+            collectedParams.clear();
+        });
+
+        btnCopySelected.addActionListener(e -> {
+            StringBuilder sb = new StringBuilder();
+            for (int row : table.getSelectedRows()) {
+                String name = tableModel.getValueAt(row, 1).toString();
+                String value = tableModel.getValueAt(row, 2).toString();
+                sb.append(name).append("=").append(value).append("\n");
+            }
+          
+            callbacks.getHelpers().copyToClipboard(sb.toString());
+        });
+
+        buttonPanel.add(btnCopySelected);
+        buttonPanel.add(btnSendToIntruder);
+        buttonPanel.add(btnClear);
+
+        mainPanel.add(new JScrollPane(table), BorderLayout.CENTER);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+       
+        callbacks.customizeUiComponent(mainPanel);
+        callbacks.addSuiteTab(this);
+    }
+
+    @Override
+    public String getTabCaption() {
+        return "Mass Assign Params";
+    }
+
+    @Override
+    public Component getUiComponent() {
+        
+        return new JPanel(); 
+    }
+
+    
+    private static class ParamData {
+        String url;
+        String name;
+        String value;
+        String type;
+
+        public ParamData(String url, String name, String value, String type) {
+            this.url = url;
+            this.name = name;
+            this.value = value;
+            this.type = type;
+        }
+        
+        public String getType() { return type; }
+    }
+}
