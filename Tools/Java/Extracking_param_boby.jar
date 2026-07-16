@@ -2,99 +2,245 @@ package burp;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
-import java.util.ArrayList;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.ArrayList;
 
+/**
+ * Mass Assignment Param Collector
+ *
+ * Passively watches proxied traffic and collects body/JSON parameters,
+ * flagging ones that commonly indicate mass-assignment risk (role, admin
+ * flags, IDs, prices, etc.) so they can be pushed straight to Repeater or
+ * Intruder for manual testing.
+ */
 public class MassAssignmentCollector implements IBurpExtender, IHttpListener, ITab {
 
     private IBurpExtenderCallbacks callbacks;
     private IExtensionHelpers helpers;
-    
-   
-    private List<ParamData> collectedParams = new ArrayList<>();
-    
-    // UI Components
+
+    // Thread-safe: processHttpMessage fires on Burp's own threads, not the EDT
+    private final List<ParamData> collectedParams = Collections.synchronizedList(new ArrayList<>());
+
+    // Words that commonly show up in mass-assignment / privilege-escalation bugs
+    private static final Set<String> SUSPICIOUS_KEYWORDS = new HashSet<>(java.util.Arrays.asList(
+            "role", "roleid", "role_id", "isadmin", "is_admin", "admin", "administrator",
+            "permission", "permissions", "privilege", "privileges", "isverified", "is_verified",
+            "verified", "accounttype", "account_type", "usertype", "user_type", "balance",
+            "price", "discount", "credit", "credits", "status", "approved", "isapproved",
+            "enabled", "active", "isactive", "owner", "ownerid", "owner_id"
+    ));
+
+    // UI
+    private JPanel mainPanel;
     private DefaultTableModel tableModel;
     private JTable table;
+    private TableRowSorter sorter;
+    private JTextField filterField;
 
     @Override
     public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
         this.callbacks = callbacks;
         this.helpers = callbacks.getHelpers();
         callbacks.setExtensionName("Mass Assignment Param Collector");
-        
-        
+
         callbacks.registerHttpListener(this);
-        
-       
+
         SwingUtilities.invokeLater(this::buildUI);
-        
-        callbacks.printOutput("Mass Assignment Collector Loaded Successfully!");
+
+        callbacks.printOutput("Mass Assignment Collector loaded successfully.");
     }
 
     @Override
     public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
-      
         if (!messageIsRequest || toolFlag != IBurpExtenderCallbacks.TOOL_PROXY) {
             return;
         }
 
-       
         IRequestInfo requestInfo = helpers.analyzeRequest(messageInfo);
         String url = requestInfo.getUrl().toString();
         List<IParameter> params = requestInfo.getParameters();
 
+        // Burp reuses the same IHttpRequestResponse object for later messages,
+        // so snapshot the bytes/service now rather than holding a live reference.
+        byte[] requestBytes = messageInfo.getRequest();
+        IHttpService service = messageInfo.getHttpService();
+
         for (IParameter param : params) {
             int type = param.getType();
-            
-           
+
             if (type == IParameter.PARAM_BODY || type == IParameter.PARAM_JSON) {
                 String name = param.getName();
                 String value = param.getValue();
 
-               
                 if (!containsParam(name, value, url)) {
-                    ParamData data = new ParamData(url, name, value, type == IParameter.PARAM_JSON ? "JSON" : "BODY");
+                    boolean suspicious = SUSPICIOUS_KEYWORDS.contains(name.toLowerCase());
+                    ParamData data = new ParamData(url, name, value,
+                            type == IParameter.PARAM_JSON ? "JSON" : "BODY",
+                            suspicious, requestBytes, service);
                     collectedParams.add(data);
-                    
-                 
-                    SwingUtilities.invokeLater(() -> {
-                        tableModel.addRow(new Object[]{url, name, value, data.getType()});
-                    });
+
+                    SwingUtilities.invokeLater(() -> tableModel.addRow(new Object[]{
+                            data.url, data.name, data.value, data.type,
+                            data.suspicious ? "⚠ FLAGGED" : ""
+                    }));
                 }
             }
         }
     }
 
-   
     private boolean containsParam(String name, String value, String url) {
-        for (ParamData p : collectedParams) {
-            if (p.name.equals(name) && p.value.equals(value) && p.url.equals(url)) {
-                return true;
+        synchronized (collectedParams) {
+            for (ParamData p : collectedParams) {
+                if (p.name.equals(name) && p.value.equals(value) && p.url.equals(url)) {
+                    return true;
+                }
             }
         }
         return false;
     }
 
-    
+    private ParamData dataForRow(int viewRow) {
+        int modelRow = table.convertRowIndexToModel(viewRow);
+        // Row order in the model mirrors insertion order into collectedParams
+        // as long as nothing is removed mid-stream except via Clear, which
+        // also clears the model, so index lookup by identity below is safe.
+        String url = (String) tableModel.getValueAt(modelRow, 0);
+        String name = (String) tableModel.getValueAt(modelRow, 1);
+        String value = (String) tableModel.getValueAt(modelRow, 2);
+        synchronized (collectedParams) {
+            for (ParamData p : collectedParams) {
+                if (p.url.equals(url) && p.name.equals(name) && p.value.equals(value)) {
+                    return p;
+                }
+            }
+        }
+        return null;
+    }
+
     private void buildUI() {
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        
-        tableModel = new DefaultTableModel(new Object[]{"URL", "Param Name", "Param Value", "Type"}, 0) {
+        mainPanel = new JPanel(new BorderLayout());
+
+        tableModel = new DefaultTableModel(new Object[]{"URL", "Param Name", "Param Value", "Type", "Flag"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;ا
+                return false;
             }
         };
-        
+
         table = new JTable(tableModel);
-        table.setAutoCreateRowSorter(true);  
-            
-      
+        table.setAutoCreateRowSorter(true);
+        sorter = new TableRowSorter(tableModel);
+        table.setRowSorter(sorter);
+
+        // Highlight suspicious rows
+        DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected,
+                                                             boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(tbl, value, isSelected, hasFocus, row, column);
+                int modelRow = tbl.convertRowIndexToModel(row);
+                Object flag = tbl.getModel().getValueAt(modelRow, 4);
+                if (!isSelected) {
+                    if ("⚠ FLAGGED".equals(flag)) {
+                        c.setBackground(new Color(255, 224, 178)); // orange tint
+                    } else {
+                        c.setBackground(Color.WHITE);
+                    }
+                }
+                return c;
+            }
+        };
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(renderer);
+        }
+
+        // Right-click context menu
+        JPopupMenu popup = new JPopupMenu();
+        JMenuItem miRepeater = new JMenuItem("Send request to Repeater");
+        JMenuItem miIntruder = new JMenuItem("Send request to Intruder");
+        JMenuItem miCopyValue = new JMenuItem("Copy value");
+        popup.add(miRepeater);
+        popup.add(miIntruder);
+        popup.add(miCopyValue);
+
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                maybeShowPopup(e);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                maybeShowPopup(e);
+            }
+
+            private void maybeShowPopup(MouseEvent e) {
+                if (e.isPopupTrigger()) {
+                    int row = table.rowAtPoint(e.getPoint());
+                    if (row >= 0) {
+                        table.setRowSelectionInterval(row, row);
+                        popup.show(table, e.getX(), e.getY());
+                    }
+                }
+            }
+        });
+
+        miRepeater.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row < 0) return;
+            ParamData data = dataForRow(row);
+            if (data != null && data.service != null) {
+                callbacks.sendToRepeater(data.service.getHost(), data.service.getPort(),
+                        "https".equalsIgnoreCase(data.service.getProtocol()), data.requestBytes,
+                        "MassAssign: " + data.name);
+            }
+        });
+
+        miIntruder.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row < 0) return;
+            ParamData data = dataForRow(row);
+            if (data != null && data.service != null) {
+                callbacks.sendToIntruder(data.service.getHost(), data.service.getPort(),
+                        "https".equalsIgnoreCase(data.service.getProtocol()), data.requestBytes);
+            }
+        });
+
+        miCopyValue.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row < 0) return;
+            int modelRow = table.convertRowIndexToModel(row);
+            callbacks.getHelpers().copyToClipboard(String.valueOf(tableModel.getValueAt(modelRow, 2)));
+        });
+
+        // Top filter bar
+        JPanel topPanel = new JPanel(new BorderLayout());
+        filterField = new JTextField();
+        filterField.putClientProperty("JTextField.placeholderText", "Filter by param name...");
+        filterField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
+        });
+        topPanel.add(new JLabel(" Filter: "), BorderLayout.WEST);
+        topPanel.add(filterField, BorderLayout.CENTER);
+
+        // Bottom button bar
         JPanel buttonPanel = new JPanel();
         JButton btnCopySelected = new JButton("Copy Selected Params");
         JButton btnSendToIntruder = new JButton("Send to Intruder");
+        JButton btnSendToRepeater = new JButton("Send to Repeater");
+        JButton btnExport = new JButton("Export CSV");
         JButton btnClear = new JButton("Clear Table");
 
         btnClear.addActionListener(e -> {
@@ -105,24 +251,81 @@ public class MassAssignmentCollector implements IBurpExtender, IHttpListener, IT
         btnCopySelected.addActionListener(e -> {
             StringBuilder sb = new StringBuilder();
             for (int row : table.getSelectedRows()) {
-                String name = tableModel.getValueAt(row, 1).toString();
-                String value = tableModel.getValueAt(row, 2).toString();
+                int modelRow = table.convertRowIndexToModel(row);
+                String name = String.valueOf(tableModel.getValueAt(modelRow, 1));
+                String value = String.valueOf(tableModel.getValueAt(modelRow, 2));
                 sb.append(name).append("=").append(value).append("\n");
             }
-          
             callbacks.getHelpers().copyToClipboard(sb.toString());
         });
 
+        btnSendToIntruder.addActionListener(e -> {
+            for (int row : table.getSelectedRows()) {
+                ParamData data = dataForRow(row);
+                if (data != null && data.service != null) {
+                    callbacks.sendToIntruder(data.service.getHost(), data.service.getPort(),
+                            "https".equalsIgnoreCase(data.service.getProtocol()), data.requestBytes);
+                }
+            }
+        });
+
+        btnSendToRepeater.addActionListener(e -> {
+            for (int row : table.getSelectedRows()) {
+                ParamData data = dataForRow(row);
+                if (data != null && data.service != null) {
+                    callbacks.sendToRepeater(data.service.getHost(), data.service.getPort(),
+                            "https".equalsIgnoreCase(data.service.getProtocol()), data.requestBytes,
+                            "MassAssign: " + data.name);
+                }
+            }
+        });
+
+        btnExport.addActionListener(e -> exportToCsv());
+
         buttonPanel.add(btnCopySelected);
+        buttonPanel.add(btnSendToRepeater);
         buttonPanel.add(btnSendToIntruder);
+        buttonPanel.add(btnExport);
         buttonPanel.add(btnClear);
 
+        mainPanel.add(topPanel, BorderLayout.NORTH);
         mainPanel.add(new JScrollPane(table), BorderLayout.CENTER);
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
-       
         callbacks.customizeUiComponent(mainPanel);
         callbacks.addSuiteTab(this);
+    }
+
+    private void applyFilter() {
+        String text = filterField.getText().trim();
+        if (text.isEmpty()) {
+            sorter.setRowFilter(null);
+        } else {
+            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + java.util.regex.Pattern.quote(text), 1));
+        }
+    }
+
+    private void exportToCsv() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setSelectedFile(new java.io.File("mass_assignment_params.csv"));
+        int result = chooser.showSaveDialog(mainPanel);
+        if (result != JFileChooser.APPROVE_OPTION) return;
+
+        try (PrintWriter pw = new PrintWriter(new FileWriter(chooser.getSelectedFile()))) {
+            pw.println("URL,Param Name,Param Value,Type,Flag");
+            for (int i = 0; i < tableModel.getRowCount(); i++) {
+                StringBuilder row = new StringBuilder();
+                for (int c = 0; c < tableModel.getColumnCount(); c++) {
+                    if (c > 0) row.append(",");
+                    row.append("\"").append(String.valueOf(tableModel.getValueAt(i, c)).replace("\"", "\"\"")).append("\"");
+                }
+                pw.println(row);
+            }
+            JOptionPane.showMessageDialog(mainPanel, "Exported successfully.");
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(mainPanel, "Export failed: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     @Override
@@ -132,24 +335,27 @@ public class MassAssignmentCollector implements IBurpExtender, IHttpListener, IT
 
     @Override
     public Component getUiComponent() {
-        
-        return new JPanel(); 
+        return mainPanel;
     }
 
-    
     private static class ParamData {
-        String url;
-        String name;
-        String value;
-        String type;
+        final String url;
+        final String name;
+        final String value;
+        final String type;
+        final boolean suspicious;
+        final byte[] requestBytes;
+        final IHttpService service;
 
-        public ParamData(String url, String name, String value, String type) {
+        ParamData(String url, String name, String value, String type,
+                  boolean suspicious, byte[] requestBytes, IHttpService service) {
             this.url = url;
             this.name = name;
             this.value = value;
             this.type = type;
+            this.suspicious = suspicious;
+            this.requestBytes = requestBytes;
+            this.service = service;
         }
-        
-        public String getType() { return type; }
     }
 }
