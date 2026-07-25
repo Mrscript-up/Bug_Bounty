@@ -635,6 +635,7 @@ class OutputFormatter:
     </script>
 </body>
 </html>
+"""
         
         return html
 
